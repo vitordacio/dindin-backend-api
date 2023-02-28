@@ -1,5 +1,5 @@
 const express = require('express');
-const { cadastrarUsuario, loginDeUsuario } = require('./components/index');
+const { cadastrarUsuario, loginDeUsuario } = require('../components/index');
 
 const rotas = express();
 
