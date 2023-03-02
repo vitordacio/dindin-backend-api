@@ -1,4 +1,4 @@
-const bancoDeDadosTeste = [];
+const pool = require('../connection');
 
 const cadastrarUsuario = (req, res) => {
     const { nome, email, senha } = req.body;
@@ -62,8 +62,6 @@ const loginDeUsuario = (req, res) => {
 
     return res.json({ usuario: { ...emailDoUsuario }, token });
 }
-
-
 
 const checarCamposObrigatorios = (email, senha) => {
     if (!email || !senha) {
