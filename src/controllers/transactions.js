@@ -10,7 +10,7 @@ const cadastroDeTransacao = async (req, res) => {
         tipo
     } = req.body;
 
-    if (validacaoDeCamposObrigatoriosDeTransacao(descricao, valor, data, categoria_id, tipo) === false) {
+    if (!validacaoDeCamposObrigatoriosDeTransacao(descricao, valor, data, categoria_id, tipo)) {
         return res.status(400).json({
             mensagem: `Todos os campos obrigatórios devem ser informados!`
         });

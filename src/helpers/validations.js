@@ -1,3 +1,5 @@
+const pool = require('../connection/connection');
+
 const validacaoDeCamposObrigatorios = (nome, email, senha) => {
     if (!nome || !email || !senha) {
         return false;
@@ -6,8 +8,8 @@ const validacaoDeCamposObrigatorios = (nome, email, senha) => {
     return true;
 }
 
-const emailExistente = async (email) => {
-    const emailExistente = await pool.query(
+const emailExistente = (email) => {
+    const emailExistente = pool.query(
         `select * from usuarios where email = $1`,
         [email]);
 

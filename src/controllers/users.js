@@ -31,7 +31,7 @@ const cadastroDeUsuario = async (req, res) => {
 
     } catch (err) {
         return res.status(500).json({
-            mensagem: `Erro interno do servidor!`
+            mensagem: `Erro interno do servidor! ${err}`
         });
     }
 }
@@ -39,7 +39,7 @@ const cadastroDeUsuario = async (req, res) => {
 const loginDeUsuario = async (req, res) => {
     const { email, senha } = req.body;
 
-    if (!email && !senha) {
+    if (!email || !senha) {
         return res.status(400).json({
             mensagem: `É necessário preencher todos os campos!`
         });
@@ -98,6 +98,12 @@ const atualizacaoDeUsuario = async (req, res) => {
     }
 
     try {
+        if (emailExistente(email)) {
+            return res.status(400).json({
+                mensagem: `Já existe usuário cadastrado com o e-mail informado!`
+            });
+        }
+
         const senhaCriptografada = await bcrypt.hash(senha, 10);
 
         const { rowCount } = await pool.query(
@@ -125,7 +131,7 @@ const atualizacaoDeUsuario = async (req, res) => {
 
     } catch (err) {
         return res.status(500).json({
-            mensagem: `Erro interno do servidor!`
+            mensagem: `Erro interno do servidor! ${err}`
         });
     }
 }
