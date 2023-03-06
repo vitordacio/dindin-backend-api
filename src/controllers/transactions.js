@@ -1,4 +1,5 @@
 const pool = require('../connection/connection');
+const { validacaoDeCamposObrigatoriosDeTransacao } = require('../helpers/validations');
 
 const cadastroDeTransacao = async (req, res) => {
     const {
@@ -9,7 +10,7 @@ const cadastroDeTransacao = async (req, res) => {
         tipo
     } = req.body;
 
-    if (validacaoDeCamposObrigatorio(descricao, valor, data, categoria_id, tipo) === false) {
+    if (validacaoDeCamposObrigatoriosDeTransacao(descricao, valor, data, categoria_id, tipo) === false) {
         return res.status(400).json({
             mensagem: `Todos os campos obrigatórios devem ser informados!`
         });
@@ -109,7 +110,7 @@ const atualizarTransacaoPorId = async (req, res) => {
         });
     }
 
-    if (validacaoDeCamposObrigatorio(descricao, valor, data, categoria_id, tipo) === false) {
+    if (validacaoDeCamposObrigatoriosDeTransacao(descricao, valor, data, categoria_id, tipo) === false) {
         return res.status(400).json({
             mensagem: `Todos os campos obrigatórios devem ser informados!`
         });
@@ -219,20 +220,6 @@ const extratoDeTransacoes = async (req, res) => {
     }
 
     return res.json(valorDasTransacoes);
-}
-
-const validacaoDeCamposObrigatorio = (
-    descricao,
-    valor,
-    data,
-    categoria_id,
-    tipo
-) => {
-    if (!descricao || !valor || !data || !categoria_id || !tipo) {
-        return false;
-    }
-
-    return true;
 }
 
 module.exports = {

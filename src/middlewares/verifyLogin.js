@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const senhaJwt = require('../senhaToken');
+const senhaJwt = require('../passwordToken');
 const pool = require('../connection/connection');
 
 const verificarLogin = async (req, res, next) => {

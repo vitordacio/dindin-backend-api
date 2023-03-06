@@ -18,7 +18,7 @@ const emailExistente = async (email) => {
     return false;
 }
 
-const validacaoDeCamposObrigatorio = (
+const validacaoDeCamposObrigatoriosDeTransacao = (
     descricao,
     valor,
     data,
@@ -30,4 +30,10 @@ const validacaoDeCamposObrigatorio = (
     }
 
     return true;
+}
+
+module.exports = {
+    validacaoDeCamposObrigatorios,
+    emailExistente,
+    validacaoDeCamposObrigatoriosDeTransacao
 }

@@ -1,12 +1,13 @@
 const pool = require('../connection/connection');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const senhaJwt = require('../senhaToken');
+const senhaJwt = require('../passwordToken');
+const { validacaoDeCamposObrigatorios, emailExistente } = require('../helpers/validations');
 
 const cadastroDeUsuario = async (req, res) => {
     const { nome, email, senha } = req.body;
 
-    if (validacaoDeCamposObrigatorios(nome, email, senha) === false) {
+    if (!validacaoDeCamposObrigatorios(nome, email, senha)) {
         return res.status(400).json({ mensagem: ` Nome, e-mail ou senha não detectados. É necessário preencher todos os campos!` });
     }
 
@@ -142,26 +143,6 @@ const listagemDeCategorias = async (req, res) => {
             mensagem: `Erro interno do servidor!`
         });
     }
-}
-
-const validacaoDeCamposObrigatorios = (nome, email, senha) => {
-    if (!nome || !email || !senha) {
-        return false;
-    }
-
-    return true;
-}
-
-const emailExistente = async (email) => {
-    const emailExistente = await pool.query(
-        `select * from usuarios where email = $1`,
-        [email]);
-
-    if (emailExistente.rowCount > 0) {
-        return true;
-    }
-
-    return false;
 }
 
 module.exports = {
