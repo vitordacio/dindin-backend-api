@@ -118,7 +118,7 @@ const atualizacaoDeUsuario = async (req, res) => {
 
         await pool.query(atualizarUsuario, [nome, email, senhaCriptografada, req.usuario.id]);
 
-        return res.status(202).json();
+        return res.status(204).json();
 
     } catch (err) {
         return res.status(500).json({

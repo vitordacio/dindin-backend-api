@@ -19,7 +19,9 @@ const cadastroDeTransacao = async (req, res) => {
     }
 
     if (tipo !== "entrada" && tipo !== "saida") {
-        return res.status(400).json({ mensagem: `Campo 'tipo' não informado corretamente!` });
+        return res.status(400).json({
+            mensagem: `Campo 'tipo' não informado corretamente!`
+        });
     }
 
     try {
@@ -45,7 +47,9 @@ const listagemDeTransacoes = async (req, res) => {
         );
 
         if (rowCount === 0) {
-            return res.status(404).json({ mensagem: `Transações não encontradas!` });
+            return res.status(404).json({
+                mensagem: `Transações não encontradas!`
+            });
         }
 
         return res.json(rows);
@@ -60,6 +64,10 @@ const listagemDeTransacoes = async (req, res) => {
 const listarTransacaoPorId = async (req, res) => {
     const { id } = req.params;
 
+    if (!id) {
+        return res.status(400).json({ mensagem: `Parâmetro não encontrado!` })
+    }
+
     try {
         const transacoesDoUsuario = await pool.query(
             `select * from transacoes where id = $1 and usuario_id = $2`,
@@ -67,14 +75,16 @@ const listarTransacaoPorId = async (req, res) => {
         );
 
         if (transacoesDoUsuario.rowCount === 0) {
-            return res.status(404).json({ mensagem: `Transação não encontrada!` });
+            return res.status(404).json({
+                mensagem: `Transação não encontrada!`
+            });
         }
 
         return res.json(transacoesDoUsuario.rows);
 
     } catch (err) {
         return res.status(500).json({
-            mensagem: `Erro interno do servidor! ${err}`
+            mensagem: `Erro interno do servidor!`
         });
     }
 }
@@ -89,6 +99,10 @@ const atualizarTransacaoPorId = async (req, res) => {
         tipo
     } = req.body;
 
+    if (!id) {
+        return res.status(400).json({ mensagem: `Parâmetro não encontrado!` })
+    }
+
     if (validacaoDeCamposObrigatorio(descricao, valor, data, categoria_id, tipo) === false) {
         return res.status(400).json({
             mensagem: `Todos os campos obrigatórios devem ser informados!`
@@ -101,30 +115,71 @@ const atualizarTransacaoPorId = async (req, res) => {
         });
     }
 
-    const { rowCount } = await pool.query(
-        'select * from transacoes where id = $1 and usuario_id = $2',
-        [id, req.usuario.id]
-    )
+    try {
+        const { rowCount } = await pool.query(
+            `select * from transacoes where id = $1 and usuario_id = $2`,
+            [id, req.usuario.id]
+        );
 
-    if (rowCount === 0) {
-        return res.status(404).json({
-            mensagem: `Transação não encontrada!`
-        })
+        if (rowCount === 0) {
+            return res.status(404).json({
+                mensagem: `Transação não encontrada!`
+            });
+        }
+
+        const atualizarTransacao = `
+            update transacao set descricao = $1,
+            valor = $2,
+            data = $3,
+            categoria_id = $4,
+            tipo = $5  
+            where id = $6
+            `;
+
+        await pool.query(atualizarTransacao, [descricao, valor, data, categoria_id, tipo, id]);
+
+        return res.status(204).json();
+
+    } catch (err) {
+        return res.status(500).json({
+            mensagem: `Erro interno do servidor!`
+        });
+    }
+}
+
+const delecaoDeTransacaoPorId = async (req, res) => {
+    const { id } = req.params;
+
+    if (!id) {
+        return res.status(400).json({ mensagem: `Parâmetro não encontrado!` })
     }
 
-    const atualizarTransacao = `
-        update transacao set descricao = $1,
-        valor = $2,
-        data = $3,
-        categoria_id = $4,
-        tipo = $5  
-        where id = $6
-        `;
+    try {
+        const { rowCount } = await pool.query(
+            `select * from transacoes where id = $1 and usuario_id = $2`,
+            [id, req.usuario.id]
+        );
 
-    await pool.query(atualizarTransacao, [descricao, valor, data, categoria_id, tipo, id]);
+        if (rowCount === 0) {
+            return res.status(404).json({
+                mensagem: `Transação não encontrada!`
+            });
+        }
 
-    return res.status(202).json();
+        await pool.query(
+            `delete transacoes where id = $1 and usuario_id = $2`,
+            [id, req.usuario.id]
+        );
+
+        return res.status(204).json();
+
+    } catch (err) {
+        return res.status(500).json({
+            mensagem: `Erro interno do servidor!`
+        });
+    }
 }
+
 
 const validacaoDeCamposObrigatorio = (
     descricao,
@@ -144,5 +199,6 @@ module.exports = {
     cadastroDeTransacao,
     listagemDeTransacoes,
     listarTransacaoPorId,
-    atualizarTransacaoPorId
+    atualizarTransacaoPorId,
+    delecaoDeTransacaoPorId
 }
