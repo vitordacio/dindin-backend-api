@@ -107,6 +107,9 @@ const atualizacaoDeUsuario = async (req, res) => {
     );
 
     return res.json(usuarioEditado.rows[0]);
+}
+
+const listagemDeCategorias = async (req, res) => {
 
 }
 
@@ -132,5 +135,6 @@ module.exports = {
     cadastroDeUsuario,
     loginDeUsuario,
     perfilDeUsuario,
-    atualizacaoDeUsuario
+    atualizacaoDeUsuario,
+    listagemDeCategorias
 }

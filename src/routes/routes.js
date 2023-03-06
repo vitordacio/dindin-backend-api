@@ -1,5 +1,5 @@
 const express = require('express');
-const { cadastroDeUsuario, loginDeUsuario, perfilDeUsuario, atualizacaoDeUsuario } = require('../controllers/user');
+const { cadastroDeUsuario, loginDeUsuario, perfilDeUsuario, atualizacaoDeUsuario, listagemDeCategorias } = require('../controllers/user');
 
 const rotas = express();
 
@@ -7,7 +7,7 @@ rotas.post('/usuario', cadastroDeUsuario);
 rotas.post('/login', loginDeUsuario);
 rotas.get('/usuario', perfilDeUsuario);
 rotas.put('/usuario', atualizacaoDeUsuario);
-rotas.get('/categoria',);
+rotas.get('/categoria', listagemDeCategorias);
 rotas.get('/transacao',);
 rotas.post('/transacao',);
 rotas.get('/transacao/extrato',);
