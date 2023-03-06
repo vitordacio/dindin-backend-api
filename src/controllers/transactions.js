@@ -167,7 +167,7 @@ const delecaoDeTransacaoPorId = async (req, res) => {
         }
 
         await pool.query(
-            `delete transacoes where id = $1 and usuario_id = $2`,
+            `delete from transacoes where id = $1 and usuario_id = $2`,
             [id, req.usuario.id]
         );
 
@@ -175,7 +175,7 @@ const delecaoDeTransacaoPorId = async (req, res) => {
 
     } catch (err) {
         return res.status(500).json({
-            mensagem: `Erro interno do servidor!`
+            mensagem: `Erro interno do servidor! ${err}`
         });
     }
 }
