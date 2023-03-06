@@ -1,7 +1,7 @@
 const pool = require('../connection/connection');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const bearer = 'bearer';
+const senhaJwt = require('../middlewares/senhaToken');
 
 const cadastroDeTransacao = async (req, res) => {
     const {
@@ -18,31 +18,33 @@ const cadastroDeTransacao = async (req, res) => {
         });
     }
 
+    let teste = ''
     if (tipo === "entrada") {
-        const test = "positivo";
+        teste = "positivo";
     }
 
     if (tipo === "saida") {
-        const test = "negativo";
+        teste = "negativo";
     }
+
     try {
         const novaTransacao = await pool.query(
-            `insert into transacoes (descricao, valor, data, categoria_id, tipo) values ($1, $2, $3, $4, $5) returning *`,
-            [descricao, valor, data, categoria_id, tipo]
+            `insert into transacoes (descricao, valor, data, categoria_id, usuario_id, tipo) values ($1, $2, $3, $4, $5, $6) returning *`,
+            [descricao, valor, data, categoria_id, req.usuario.id, tipo]
         );
 
-        const dadosDaTransacao = {
-            id: rows[0].id,
-            tipo,
-            descricao,
-            valor,
-            data,
-            usuario_id,
-            categoria_id,
-            categoria_nome
-        }
+        // const dadosDaTransacao = {
+        //     id: rows[0].id,
+        //     tipo: teste,
+        //     descricao,
+        //     valor,
+        //     data,
+        //     usuario_id: req.usuario.id,
+        //     categoria_id,
+        //     categoria_nome
+        // }
 
-        return res.status(201).json(dadosDaTransacao);
+        return res.status(201).json(novaTransacao);
 
     } catch (err) {
         return res.status(500).json({
@@ -52,23 +54,45 @@ const cadastroDeTransacao = async (req, res) => {
 }
 
 const listagemDeTransacoes = async (req, res) => {
-    if (!token) {
-        return res.status(401).json({ mensagem: `nop` });
-    }
-
     try {
-        const transacoesDoUsuario = await pool.query(
-            `select * from transacoes where usuario_id = id`
+        const { rows, rowCount } = await pool.query(
+            `select * from transacoes where usuario_id = $1`,
+            [req.usuario.id]
         );
 
-        return res.json(transacoesDoUsuario);
+        if (rowCount === 0) {
+            return res.status(404).json({ mensagem: `Transações não encontradas!` });
+        }
+
+        return res.json(rows);
 
     } catch (err) {
         return res.status(500).json({
             mensagem: `Erro interno do servidor! ${err}`
         });
     }
+}
 
+const listarTransacaoPorId = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const transacoesDoUsuario = await pool.query(
+            `select * from transacoes where id = $1 and usuario_id = $2`,
+            [id, req.usuario.id]
+        );
+
+        if (transacoesDoUsuario.rowCount === 0) {
+            return res.status(404).json({ mensagem: `Transação não encontrada!` });
+        }
+
+        return res.json(transacoesDoUsuario.rows);
+
+    } catch (err) {
+        return res.status(500).json({
+            mensagem: `Erro interno do servidor! ${err}`
+        });
+    }
 }
 
 const validacaoDeCamposObrigatorio = (
@@ -86,5 +110,7 @@ const validacaoDeCamposObrigatorio = (
 }
 
 module.exports = {
-    cadastroDeTransacao
+    cadastroDeTransacao,
+    listagemDeTransacoes,
+    listarTransacaoPorId
 }

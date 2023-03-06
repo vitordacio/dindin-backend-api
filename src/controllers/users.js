@@ -30,7 +30,7 @@ const cadastroDeUsuario = async (req, res) => {
 
     } catch (err) {
         return res.status(500).json({
-            mensagem: `Erro interno do servidor! ${err}`
+            mensagem: `Erro interno do servidor!`
         });
     }
 }
@@ -45,7 +45,6 @@ const loginDeUsuario = async (req, res) => {
     }
 
     try {
-
         const usuario = await pool.query(
             `select * from usuarios where email = $1`,
             [email]
@@ -78,7 +77,7 @@ const loginDeUsuario = async (req, res) => {
 
     } catch (err) {
         return res.status(500).json({
-            mensagem: `Erro interno do servidor! ${err}`
+            mensagem: `Erro interno do servidor!`
         });
     }
 }
@@ -91,52 +90,54 @@ const atualizacaoDeUsuario = async (req, res) => {
     const { nome, email, senha } = req.body;
 
     if (validacaoDeCamposObrigatorios(nome, email, senha) === false) {
-        return res.status(400).json({ mensagem: ` Nome, e-mail ou senha não detectados. É necessário preencher todos os campos!` });
+        return res.status(400).json({
+            mensagem: `Nome, e-mail ou senha não detectados. É necessário preencher todos os campos!`
+        });
     }
 
     try {
-        if (emailExistente(email)) {
-            return res.status(400).json({
-                mensagem: `O e-mail informado já está sendo utilizado por outro usuário! Favor escolher outro e-mail.`
-            });
-        }
-
         const senhaCriptografada = await bcrypt.hash(senha, 10);
 
-        const usuarioAtualizado = await pool.query(
-            `update usuarios (nome, email, senha) values ($1, $2, $3) where token = ${token}`,
-            [nome, email, senhaCriptografada]
-        );
+        const { rowCount } = await pool.query(
+            'select * from usuarios where id = $1',
+            [req.usuario.id]
+        )
 
-        const dadosDoUsuarioAtualizado = {
-            id: rows[0].id,
-            nome: rows[0].nome,
-            email: rows[0].email,
+        if (rowCount === 0) {
+            return res.status(404).json({
+                mensagem: `Usuário não encontrado!`
+            })
         }
-        return res.json(dadosDoUsuarioAtualizado);
+
+        const atualizarUsuario = `
+            update usuarios set nome = $1,
+            email = $2,
+            senha = $3  
+            where id = $4
+            `;
+
+        await pool.query(atualizarUsuario, [nome, email, senhaCriptografada, req.usuario.id]);
+
+        return res.status(202).json();
 
     } catch (err) {
         return res.status(500).json({
-            mensagem: `Erro interno do servidor! ${err}`
+            mensagem: `Erro interno do servidor!`
         });
     }
 }
 
 const listagemDeCategorias = async (req, res) => {
-    if (!token) {
-        return res.status(401).json({ mensagem: `Para acessar este recurso um token de autenticação válido deve ser enviado!` })
-    }
-
     try {
         const categoriasCadastradas = await pool.query(
             `select * from categorias`
         );
 
-        return res.json(categoriasCadastradas);
+        return res.json(categoriasCadastradas.rows);
 
     } catch (err) {
         return res.status(500).json({
-            mensagem: `Erro interno do servidor! ${err}`
+            mensagem: `Erro interno do servidor!`
         });
     }
 }
@@ -148,8 +149,6 @@ const validacaoDeCamposObrigatorios = (nome, email, senha) => {
 
     return true;
 }
-
-
 
 const emailExistente = async (email) => {
     const emailExistente = await pool.query(
