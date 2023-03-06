@@ -100,7 +100,9 @@ const atualizarTransacaoPorId = async (req, res) => {
     } = req.body;
 
     if (!id) {
-        return res.status(400).json({ mensagem: `Parâmetro não encontrado!` })
+        return res.status(400).json({
+            mensagem: `Parâmetro não encontrado!`
+        });
     }
 
     if (validacaoDeCamposObrigatorio(descricao, valor, data, categoria_id, tipo) === false) {
@@ -128,7 +130,7 @@ const atualizarTransacaoPorId = async (req, res) => {
         }
 
         const atualizarTransacao = `
-            update transacao set descricao = $1,
+            update transacoes set descricao = $1,
             valor = $2,
             data = $3,
             categoria_id = $4,
@@ -142,7 +144,7 @@ const atualizarTransacaoPorId = async (req, res) => {
 
     } catch (err) {
         return res.status(500).json({
-            mensagem: `Erro interno do servidor!`
+            mensagem: `Erro interno do servidor!${err}`
         });
     }
 }
@@ -180,6 +182,40 @@ const delecaoDeTransacaoPorId = async (req, res) => {
     }
 }
 
+const extratoDeTransacoes = async (req, res) => {
+
+    const { rows, rowCount } = await pool.query(
+        `select * from transacoes where usuario_id = $1`,
+        [req.usuario.id]
+    );
+
+    if (rowCount === 0) {
+        return res.status(404).json({
+            mensagem: `Transações não encontradas!`
+        });
+    }
+
+    const transacoesTipoEntrada = rows.filter(transacao => transacao.tipo === "entrada");
+    const transacoesTipoSaida = rows.filter(transacao => transacao.tipo === "saida");
+    const valorInicial = 0;
+
+    const entrada = transacoesTipoEntrada.reduce(
+        (acumulador, valorAtual) => acumulador + valorAtual.valor,
+        valorInicial
+    );
+
+    const saida = transacoesTipoSaida.reduce(
+        (acumulador, valorAtual) => acumulador + valorAtual.valor,
+        valorInicial
+    );
+
+    const valorDasTransacoes = {
+        entrada,
+        saida
+    }
+
+    return res.json(valorDasTransacoes);
+}
 
 const validacaoDeCamposObrigatorio = (
     descricao,
@@ -200,5 +236,6 @@ module.exports = {
     listagemDeTransacoes,
     listarTransacaoPorId,
     atualizarTransacaoPorId,
-    delecaoDeTransacaoPorId
+    delecaoDeTransacaoPorId,
+    extratoDeTransacoes
 }
