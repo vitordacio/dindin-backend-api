@@ -18,13 +18,8 @@ const cadastroDeTransacao = async (req, res) => {
         });
     }
 
-    let teste = ''
-    if (tipo === "entrada") {
-        teste = "positivo";
-    }
-
-    if (tipo === "saida") {
-        teste = "negativo";
+    if (tipo !== "entrada" && tipo !== "saida") {
+        return res.status(400).json({ mensagem: `Campo 'tipo' não informado corretamente!` });
     }
 
     try {
@@ -32,17 +27,6 @@ const cadastroDeTransacao = async (req, res) => {
             `insert into transacoes (descricao, valor, data, categoria_id, usuario_id, tipo) values ($1, $2, $3, $4, $5, $6) returning *`,
             [descricao, valor, data, categoria_id, req.usuario.id, tipo]
         );
-
-        // const dadosDaTransacao = {
-        //     id: rows[0].id,
-        //     tipo: teste,
-        //     descricao,
-        //     valor,
-        //     data,
-        //     usuario_id: req.usuario.id,
-        //     categoria_id,
-        //     categoria_nome
-        // }
 
         return res.status(201).json(novaTransacao);
 
@@ -95,6 +79,53 @@ const listarTransacaoPorId = async (req, res) => {
     }
 }
 
+const atualizarTransacaoPorId = async (req, res) => {
+    const { id } = req.params;
+    const {
+        descricao,
+        valor,
+        data,
+        categoria_id,
+        tipo
+    } = req.body;
+
+    if (validacaoDeCamposObrigatorio(descricao, valor, data, categoria_id, tipo) === false) {
+        return res.status(400).json({
+            mensagem: `Todos os campos obrigatórios devem ser informados!`
+        });
+    }
+
+    if (tipo !== "entrada" && tipo !== "saida") {
+        return res.status(400).json({
+            mensagem: `Campo 'tipo' não informado corretamente!`
+        });
+    }
+
+    const { rowCount } = await pool.query(
+        'select * from transacoes where id = $1 and usuario_id = $2',
+        [id, req.usuario.id]
+    )
+
+    if (rowCount === 0) {
+        return res.status(404).json({
+            mensagem: `Transação não encontrada!`
+        })
+    }
+
+    const atualizarTransacao = `
+        update transacao set descricao = $1,
+        valor = $2,
+        data = $3,
+        categoria_id = $4,
+        tipo = $5  
+        where id = $6
+        `;
+
+    await pool.query(atualizarTransacao, [descricao, valor, data, categoria_id, tipo, id]);
+
+    return res.status(202).json();
+}
+
 const validacaoDeCamposObrigatorio = (
     descricao,
     valor,
@@ -112,5 +143,6 @@ const validacaoDeCamposObrigatorio = (
 module.exports = {
     cadastroDeTransacao,
     listagemDeTransacoes,
-    listarTransacaoPorId
+    listarTransacaoPorId,
+    atualizarTransacaoPorId
 }
