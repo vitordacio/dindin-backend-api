@@ -24,7 +24,12 @@ const cadastroDeUsuario = async (req, res) => {
             [nome, email, senhaCriptografada]
         );
 
-        return res.json(novoUsuario.rows[0]);
+        const dadosDoNovoUsuario = {
+            id: rows[0].id,
+            nome: rows[0].nome,
+            email: rows[0].email,
+        }
+        return res.json(dadosDoNovoUsuario);
 
     } catch (err) {
         return res.status(500).json({
@@ -82,7 +87,7 @@ const perfilDeUsuario = async (req, res) => {
     }
 
     return res.status(401).json({
-        mensagem: `Para acessar este recurso um token de autenticação válido deve ser enviado.`
+        mensagem: `Para acessar este recurso um token de autenticação válido deve ser enviado!`
     });
 }
 
@@ -93,24 +98,51 @@ const atualizacaoDeUsuario = async (req, res) => {
         return res.status(400).json({ mensagem: ` Nome, e-mail ou senha não detectados. É necessário preencher todos os campos!` });
     }
 
-    if (emailExistente(email)) {
-        return res.status(400).json({
-            mensagem: `Já existe usuário cadastrado com o e-mail informado! Favor escolher outro e-mail.`
+    try {
+        if (emailExistente(email)) {
+            return res.status(400).json({
+                mensagem: `O e-mail informado já está sendo utilizado por outro usuário! Favor escolher outro e-mail.`
+            });
+        }
+
+        const senhaCriptografada = await bcrypt.hash(senha, 10);
+
+        const usuarioAtualizado = await pool.query(
+            `update usuarios (nome, email, senha) values ($1, $2, $3) where token = ${token}`,
+            [nome, email, senhaCriptografada]
+        );
+
+        const dadosDoUsuarioAtualizado = {
+            id: rows[0].id,
+            nome: rows[0].nome,
+            email: rows[0].email,
+        }
+        return res.json(dadosDoUsuarioAtualizado);
+
+    } catch (err) {
+        return res.status(500).json({
+            mensagem: `Erro interno do servidor! ${err}`
         });
     }
-
-    const senhaCriptografada = await bcrypt.hash(senha, 10);
-
-    const usuarioEditado = await pool.query(
-        `update usuarios (nome, email, senha) values ($1, $2, $3) where token = ${token}`,
-        [nome, email, senhaCriptografada]
-    );
-
-    return res.json(usuarioEditado.rows[0]);
 }
 
 const listagemDeCategorias = async (req, res) => {
+    if (!token) {
+        return res.status(401).json({ mensagem: `Para acessar este recurso um token de autenticação válido deve ser enviado!` })
+    }
 
+    try {
+        const categoriasCadastradas = await pool.query(
+            `select * from categorias`
+        );
+
+        return res.json(categoriasCadastradas);
+
+    } catch (err) {
+        return res.status(500).json({
+            mensagem: `Erro interno do servidor! ${err}`
+        });
+    }
 }
 
 const validacaoDeCamposObrigatorios = (nome, email, senha) => {
@@ -120,6 +152,8 @@ const validacaoDeCamposObrigatorios = (nome, email, senha) => {
 
     return true;
 }
+
+
 
 const emailExistente = async (email) => {
     const emailExistente = await pool.query(

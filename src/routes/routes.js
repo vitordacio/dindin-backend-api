@@ -1,5 +1,5 @@
 const express = require('express');
-const { cadastroDeUsuario, loginDeUsuario, perfilDeUsuario, atualizacaoDeUsuario, listagemDeCategorias } = require('../controllers/user');
+const { cadastroDeUsuario, loginDeUsuario, perfilDeUsuario, atualizacaoDeUsuario, listagemDeCategorias } = require('../controllers/users');
 
 const rotas = express();
 
