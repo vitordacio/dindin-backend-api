@@ -84,10 +84,7 @@ const loginDeUsuario = async (req, res) => {
 }
 
 const perfilDeUsuario = async (req, res) => {
-
-    return res.status(401).json({
-        mensagem: `Para acessar este recurso um token de autenticação válido deve ser enviado!`
-    });
+    return res.json(req.usuario);
 }
 
 const atualizacaoDeUsuario = async (req, res) => {

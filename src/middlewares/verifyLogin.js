@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const senhaJwt = require('./senhaToken');
+const pool = require('../connection/connection');
 
 const verificarLogin = async (req, res, next) => {
     const { authorization } = req.headers;
