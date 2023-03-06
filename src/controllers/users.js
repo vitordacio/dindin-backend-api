@@ -1,8 +1,8 @@
 const pool = require('../connection/connection');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const bearer = 'bearer';
-//falta - mudar body resposta para não ter senha (mesmo que ela esteja em hash)
+const senhaJwt = require('../middlewares/senhaToken');
+
 const cadastroDeUsuario = async (req, res) => {
     const { nome, email, senha } = req.body;
 
@@ -24,12 +24,9 @@ const cadastroDeUsuario = async (req, res) => {
             [nome, email, senhaCriptografada]
         );
 
-        const dadosDoNovoUsuario = {
-            id: rows[0].id,
-            nome: rows[0].nome,
-            email: rows[0].email,
-        }
-        return res.json(dadosDoNovoUsuario);
+        const { senha: _, ...usuario } = novoUsuario.rows[0];
+
+        return res.status(201).json(usuario);
 
     } catch (err) {
         return res.status(500).json({
@@ -40,39 +37,44 @@ const cadastroDeUsuario = async (req, res) => {
 
 const loginDeUsuario = async (req, res) => {
     const { email, senha } = req.body;
+
+    if (!email || !senha) {
+        return res.status(400).json({
+            mensagem: `Nome ou senha não detectados. É necessário preencher todos os campos!`
+        });
+    }
+
     try {
-        if (!email || !senha) {
-            return res.status(400).json({
-                mensagem: `Nome ou senha não detectados. É necessário preencher todos os campos!`
-            });
-        }
 
         const usuario = await pool.query(
             `select * from usuarios where email = $1`,
             [email]
         );
 
-        if (usuario.rowCount < 1) {
-            return res.status(404).json({
-                mensagem: `E-mail ou senha invalida!`
+        if (usuario.rowCount === 0) {
+            return res.status(400).json({
+                mensagem: `E-mail ou senha invalidos!`
             });
         }
 
-        const senhaValida = await bcrypt.compare(senha, usuario.rows[0].senha);
+        const { senha: senhaDoUsuario, ...usuarioLogado } = usuario.rows[0];
+
+        const senhaValida = await bcrypt.compare(senha, senhaDoUsuario);
 
         if (!senhaValida) {
-            return res.status(404).json({
-                mensagem: `E-mail ou senha invalida!`
+            return res.status(400).json({
+                mensagem: `E-mail ou senha invalidos!`
             })
         }
 
-        const token = jwt.sign({ id: usuario.rows[0].id }, bearer, {
+        const token = jwt.sign({ id: usuarioLogado.id }, senhaJwt, {
             expiresIn: '24h',
         });
 
-        const { senha: _, ...usuarioLogado } = usuario.rows[0];
-
-        return res.json({ usuario: usuarioLogado, token });
+        return res.json({
+            usuario: usuarioLogado,
+            token
+        });
 
     } catch (err) {
         return res.status(500).json({
@@ -80,11 +82,8 @@ const loginDeUsuario = async (req, res) => {
         });
     }
 }
-//falta conferir token daqui pra baixo
+
 const perfilDeUsuario = async (req, res) => {
-    if (token) {
-        return res.json(req.usuario);
-    }
 
     return res.status(401).json({
         mensagem: `Para acessar este recurso um token de autenticação válido deve ser enviado!`
@@ -160,9 +159,11 @@ const emailExistente = async (email) => {
         `select * from usuarios where email = $1`,
         [email]);
 
-    if (emailExistente.rowCount >= 1) {
+    if (emailExistente.rowCount > 0) {
         return true;
     }
+
+    return false;
 }
 
 module.exports = {
