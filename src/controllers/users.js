@@ -1,7 +1,7 @@
 const pool = require('../connection/connection');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const senhaJwt = require('../middlewares/senhaToken');
+const senhaJwt = require('../senhaToken');
 
 const cadastroDeUsuario = async (req, res) => {
     const { nome, email, senha } = req.body;
@@ -11,7 +11,7 @@ const cadastroDeUsuario = async (req, res) => {
     }
 
     try {
-        if (emailExistente(email) === true) {
+        if (emailExistente(email)) {
             return res.status(400).json({
                 mensagem: `Já existe usuário cadastrado com o e-mail informado!`
             });
@@ -38,9 +38,9 @@ const cadastroDeUsuario = async (req, res) => {
 const loginDeUsuario = async (req, res) => {
     const { email, senha } = req.body;
 
-    if (!email || !senha) {
+    if (!email && !senha) {
         return res.status(400).json({
-            mensagem: `Nome ou senha não detectados. É necessário preencher todos os campos!`
+            mensagem: `É necessário preencher todos os campos!`
         });
     }
 
@@ -88,8 +88,9 @@ const perfilDeUsuario = async (req, res) => {
 
 const atualizacaoDeUsuario = async (req, res) => {
     const { nome, email, senha } = req.body;
+    const { id } = req.usuario;
 
-    if (validacaoDeCamposObrigatorios(nome, email, senha) === false) {
+    if (!validacaoDeCamposObrigatorios(nome, email, senha)) {
         return res.status(400).json({
             mensagem: `Nome, e-mail ou senha não detectados. É necessário preencher todos os campos!`
         });
@@ -100,7 +101,7 @@ const atualizacaoDeUsuario = async (req, res) => {
 
         const { rowCount } = await pool.query(
             'select * from usuarios where id = $1',
-            [req.usuario.id]
+            [id]
         )
 
         if (rowCount === 0) {
@@ -110,13 +111,14 @@ const atualizacaoDeUsuario = async (req, res) => {
         }
 
         const atualizarUsuario = `
-            update usuarios set nome = $1,
+            update usuarios set 
+            nome = $1,
             email = $2,
             senha = $3  
             where id = $4
             `;
 
-        await pool.query(atualizarUsuario, [nome, email, senhaCriptografada, req.usuario.id]);
+        await pool.query(atualizarUsuario, [nome, email, senhaCriptografada, id]);
 
         return res.status(204).json();
 

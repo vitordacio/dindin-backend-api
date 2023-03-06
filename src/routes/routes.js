@@ -23,6 +23,7 @@ rotas.get('/categoria', listagemDeCategorias);
 rotas.get('/transacao', listagemDeTransacoes);
 rotas.post('/transacao', cadastroDeTransacao);
 rotas.get('/transacao/extrato', extratoDeTransacoes);
+
 rotas.get('/transacao/:id', listarTransacaoPorId);
 rotas.put('/transacao/:id', atualizarTransacaoPorId);
 rotas.delete('/transacao/:id', delecaoDeTransacaoPorId);

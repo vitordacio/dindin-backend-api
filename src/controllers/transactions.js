@@ -1,7 +1,4 @@
 const pool = require('../connection/connection');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const senhaJwt = require('../middlewares/senhaToken');
 
 const cadastroDeTransacao = async (req, res) => {
     const {
@@ -18,7 +15,9 @@ const cadastroDeTransacao = async (req, res) => {
         });
     }
 
-    if (tipo !== "entrada" && tipo !== "saida") {
+    const tiposDeTransacao = ["entrada", "saida"];
+
+    if (!tiposDeTransacao.includes(tipo)) {
         return res.status(400).json({
             mensagem: `Campo 'tipo' não informado corretamente!`
         });
@@ -30,7 +29,12 @@ const cadastroDeTransacao = async (req, res) => {
             [descricao, valor, data, categoria_id, req.usuario.id, tipo]
         );
 
-        return res.status(201).json(novaTransacao);
+        const transacao = novaTransacao.rows[0];
+
+        const transacaoRealizada = await pool.query(
+            `select transacoes.*, categorias.descricao as categoria_nome from transacoes join categorias on transacoes.categoria_id = categorias.id where transacoes.id = $1`,
+            [transacao.id])
+        return res.status(201).json(transacaoRealizada.rows[0]);
 
     } catch (err) {
         return res.status(500).json({
