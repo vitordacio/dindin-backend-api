@@ -82,13 +82,20 @@ const loginDeUsuario = async (req, res) => {
 
     } catch (err) {
         return res.status(500).json({
-            mensagem: `Erro interno do servidor!`
+            mensagem: `Erro interno do servidor! ${err}`
         });
     }
 }
 
 const perfilDeUsuario = async (req, res) => {
-    return res.json(req.usuario);
+    try {
+        return res.json(req.usuario);
+
+    } catch (err) {
+        return res.status(500).json({
+            mensagem: `Erro interno do servidor! ${err}`
+        });
+    }
 }
 
 const atualizacaoDeUsuario = async (req, res) => {
@@ -155,7 +162,7 @@ const listagemDeCategorias = async (req, res) => {
 
     } catch (err) {
         return res.status(500).json({
-            mensagem: `Erro interno do servidor!`
+            mensagem: `Erro interno do servidor! ${err}`
         });
     }
 }

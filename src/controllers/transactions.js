@@ -45,10 +45,11 @@ const cadastroDeTransacao = async (req, res) => {
 }
 
 const listagemDeTransacoes = async (req, res) => {
+    const { id } = req.usuario;
     try {
         const { rows, rowCount } = await pool.query(
             `select * from transacoes where usuario_id = $1`,
-            [req.usuario.id]
+            [id]
         );
 
         if (rowCount === 0) {
@@ -56,8 +57,10 @@ const listagemDeTransacoes = async (req, res) => {
                 mensagem: `Transações não encontradas!`
             });
         }
-
-        return res.json(rows);
+        const transacaoRealizada = await pool.query(
+            `select transacoes.*, categorias.descricao as categoria_nome from transacoes join categorias on transacoes.categoria_id = categorias.id where transacoes.usuario_id = $1`,
+            [id])
+        return res.status(201).json(transacaoRealizada.rows);
 
     } catch (err) {
         return res.status(500).json({
@@ -74,22 +77,21 @@ const listarTransacaoPorId = async (req, res) => {
     }
 
     try {
-        const transacoesDoUsuario = await pool.query(
-            `select * from transacoes where id = $1 and usuario_id = $2`,
-            [id, req.usuario.id]
-        );
+        const transacaoDoUsuario = await pool.query(
+            `select transacoes.*, categorias.descricao as categoria_nome from transacoes join categorias on transacoes.categoria_id = categorias.id where transacoes.id = $1 and transacoes.usuario_id = $2`,
+            [id, req.usuario.id]);
 
-        if (transacoesDoUsuario.rowCount === 0) {
+        if (transacaoDoUsuario.rowCount === 0) {
             return res.status(404).json({
                 mensagem: `Transação não encontrada!`
             });
         }
 
-        return res.json(transacoesDoUsuario.rows);
+        return res.status(201).json(transacaoDoUsuario.rows[0]);
 
     } catch (err) {
         return res.status(500).json({
-            mensagem: `Erro interno do servidor!`
+            mensagem: `Erro interno do servidor! ${err}`
         });
     }
 }
@@ -116,7 +118,9 @@ const atualizarTransacaoPorId = async (req, res) => {
         });
     }
 
-    if (tipo !== "entrada" && tipo !== "saida") {
+    const tiposDeTransacao = ["entrada", "saida"];
+
+    if (!tiposDeTransacao.includes(tipo)) {
         return res.status(400).json({
             mensagem: `Campo 'tipo' não informado corretamente!`
         });
@@ -135,12 +139,13 @@ const atualizarTransacaoPorId = async (req, res) => {
         }
 
         const atualizarTransacao = `
-            update transacoes set descricao = $1,
+            update transacoes set 
+            descricao = $1,
             valor = $2,
             data = $3,
             categoria_id = $4,
             tipo = $5  
-            where id = $6
+            where transacoes.id = $6
             `;
 
         await pool.query(atualizarTransacao, [descricao, valor, data, categoria_id, tipo, id]);
@@ -174,7 +179,7 @@ const delecaoDeTransacaoPorId = async (req, res) => {
         }
 
         await pool.query(
-            `delete from transacoes where id = $1 and usuario_id = $2`,
+            `delete from transacoes where transacoes.id = $1 and transacoes.usuario_id = $2`,
             [id, req.usuario.id]
         );
 
@@ -188,38 +193,44 @@ const delecaoDeTransacaoPorId = async (req, res) => {
 }
 
 const extratoDeTransacoes = async (req, res) => {
+    try {
+        const { rows, rowCount } = await pool.query(
+            `select * from transacoes where usuario_id = $1`,
+            [req.usuario.id]
+        );
 
-    const { rows, rowCount } = await pool.query(
-        `select * from transacoes where usuario_id = $1`,
-        [req.usuario.id]
-    );
+        if (rowCount === 0) {
+            return res.status(404).json({
+                mensagem: `Transações não encontradas!`
+            });
+        }
 
-    if (rowCount === 0) {
-        return res.status(404).json({
-            mensagem: `Transações não encontradas!`
+        const transacoesTipoEntrada = rows.filter(transacao => transacao.tipo === "entrada");
+        const transacoesTipoSaida = rows.filter(transacao => transacao.tipo === "saida");
+        const valorInicial = 0;
+
+        const entrada = transacoesTipoEntrada.reduce(
+            (acumulador, valorAtual) => acumulador + valorAtual.valor,
+            valorInicial
+        );
+
+        const saida = transacoesTipoSaida.reduce(
+            (acumulador, valorAtual) => acumulador + valorAtual.valor,
+            valorInicial
+        );
+
+        const valorDasTransacoes = {
+            entrada,
+            saida
+        }
+
+        return res.json(valorDasTransacoes);
+
+    } catch (err) {
+        return res.status(500).json({
+            mensagem: `Erro interno do servidor! ${err}`
         });
     }
-
-    const transacoesTipoEntrada = rows.filter(transacao => transacao.tipo === "entrada");
-    const transacoesTipoSaida = rows.filter(transacao => transacao.tipo === "saida");
-    const valorInicial = 0;
-
-    const entrada = transacoesTipoEntrada.reduce(
-        (acumulador, valorAtual) => acumulador + valorAtual.valor,
-        valorInicial
-    );
-
-    const saida = transacoesTipoSaida.reduce(
-        (acumulador, valorAtual) => acumulador + valorAtual.valor,
-        valorInicial
-    );
-
-    const valorDasTransacoes = {
-        entrada,
-        saida
-    }
-
-    return res.json(valorDasTransacoes);
 }
 
 module.exports = {
