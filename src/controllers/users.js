@@ -2,7 +2,7 @@ const pool = require('../connection/connection');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const senhaJwt = require('../passwordToken');
-const { validacaoDeCamposObrigatorios, emailExistente } = require('../helpers/validations');
+const { validacaoDeCamposObrigatorios } = require('../helpers/validations');
 
 const cadastroDeUsuario = async (req, res) => {
     const { nome, email, senha } = req.body;
@@ -12,12 +12,16 @@ const cadastroDeUsuario = async (req, res) => {
     }
 
     try {
-        if (emailExistente(email)) {
+        const emailExistente = await pool.query(
+            `select * from usuarios where usuarios.email = $1`,
+            [email]
+        );
+
+        if (emailExistente.rowCount > 0) {
             return res.status(400).json({
                 mensagem: `Já existe usuário cadastrado com o e-mail informado!`
             });
         }
-
         const senhaCriptografada = await bcrypt.hash(senha, 10);
 
         const novoUsuario = await pool.query(
@@ -98,7 +102,12 @@ const atualizacaoDeUsuario = async (req, res) => {
     }
 
     try {
-        if (emailExistente(email)) {
+        const emailExistente = await pool.query(
+            `select * from usuarios where usuarios.email = $1 and not usuarios.id = $2`,
+            [email, req.usuario.id]
+        );
+
+        if (emailExistente.rowCount > 0) {
             return res.status(400).json({
                 mensagem: `Já existe usuário cadastrado com o e-mail informado!`
             });

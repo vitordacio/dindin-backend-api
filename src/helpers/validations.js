@@ -1,23 +1,9 @@
-const pool = require('../connection/connection');
-
 const validacaoDeCamposObrigatorios = (nome, email, senha) => {
     if (!nome || !email || !senha) {
         return false;
     }
 
     return true;
-}
-
-const emailExistente = (email) => {
-    const emailExistente = pool.query(
-        `select * from usuarios where email = $1`,
-        [email]);
-
-    if (emailExistente.rowCount > 0) {
-        return true;
-    }
-
-    return false;
 }
 
 const validacaoDeCamposObrigatoriosDeTransacao = (
@@ -36,6 +22,5 @@ const validacaoDeCamposObrigatoriosDeTransacao = (
 
 module.exports = {
     validacaoDeCamposObrigatorios,
-    emailExistente,
     validacaoDeCamposObrigatoriosDeTransacao
 }
