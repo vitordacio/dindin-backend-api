@@ -1,7 +1,6 @@
-const pool = require('../connection/connection');
+
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const senhaJwt = require('../passwordToken');
 const { validacaoDeCamposObrigatorios } = require('../helpers/validations');
 const knex = require('../connection/api');
 

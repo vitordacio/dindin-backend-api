@@ -1,5 +1,4 @@
 const knex = require('../connection/api');
-const pool = require('../connection/connection');
 
 const cadastroDeTransacao = async (req, res) => {
     const {
