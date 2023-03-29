@@ -15,6 +15,7 @@ const schemaLogin = require('../schemas/schemaLogin');
 
 const routes = express();
 
+routes.get('/', (req, res) => res.json('Welcome'))
 routes.post('/usuario', verifyCustomBody(schemaCadastrarUsuario), cadastroDeUsuario);
 routes.post('/login', verifyCustomBody(schemaLogin), loginDeUsuario);
 

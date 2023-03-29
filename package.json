@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "![](https://i.imgur.com/xG74tOh.png)",
   "scripts": {
-    "start": "node ./scr/index.js",
+    "start": "node ./src/index.js",
     "dev": "nodemon ./src/index.js"
   },
   "keywords": [],
