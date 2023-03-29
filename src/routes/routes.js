@@ -7,25 +7,29 @@ const {
     cadastroDeUsuario, loginDeUsuario,
     perfilDeUsuario, atualizacaoDeUsuario,
     listagemDeCategorias } = require('../controllers/users');
+const verifyCustomBody = require('../middlewares/verifyCustomBody');
 const verificarLogin = require('../middlewares/verifyLogin');
+const schemaCadastrarTransacao = require('../schemas/schemaCadastrarTransacao');
+const schemaCadastrarUsuario = require('../schemas/schemaCadastrarUsuario');
+const schemaLogin = require('../schemas/schemaLogin');
 
-const rotas = express();
+const routes = express();
 
-rotas.post('/usuario', cadastroDeUsuario);
-rotas.post('/login', loginDeUsuario);
+routes.post('/usuario', verifyCustomBody(schemaCadastrarUsuario), cadastroDeUsuario);
+routes.post('/login', verifyCustomBody(schemaLogin), loginDeUsuario);
 
-rotas.use(verificarLogin);
+routes.use(verificarLogin);
 
-rotas.get('/usuario', perfilDeUsuario);
-rotas.put('/usuario', atualizacaoDeUsuario);
-rotas.get('/categoria', listagemDeCategorias);
+routes.get('/usuario', perfilDeUsuario);
+routes.put('/usuario', verifyCustomBody(schemaCadastrarUsuario), atualizacaoDeUsuario);
+routes.get('/categoria', listagemDeCategorias);
 
-rotas.get('/transacao', listagemDeTransacoes);
-rotas.post('/transacao', cadastroDeTransacao);
-rotas.get('/transacao/extrato', extratoDeTransacoes);
+routes.get('/transacao', listagemDeTransacoes);
+routes.post('/transacao', verifyCustomBody(schemaCadastrarTransacao), cadastroDeTransacao);
+routes.get('/transacao/extrato', extratoDeTransacoes);
 
-rotas.get('/transacao/:id', listarTransacaoPorId);
-rotas.put('/transacao/:id', atualizarTransacaoPorId);
-rotas.delete('/transacao/:id', delecaoDeTransacaoPorId);
+routes.get('/transacao/:id', listarTransacaoPorId);
+routes.put('/transacao/:id', verifyCustomBody(schemaCadastrarTransacao), atualizarTransacaoPorId);
+routes.delete('/transacao/:id', delecaoDeTransacaoPorId);
 
-module.exports = rotas;
+module.exports = routes;

@@ -1,6 +1,5 @@
 const jwt = require('jsonwebtoken');
-const senhaJwt = require('../passwordToken');
-const pool = require('../connection/connection');
+const knex = require('../connection/api');
 
 const verificarLogin = async (req, res, next) => {
     const { authorization } = req.headers;
@@ -14,19 +13,17 @@ const verificarLogin = async (req, res, next) => {
     const token = authorization.split(' ')[1];
 
     try {
-        const { id } = jwt.verify(token, senhaJwt);
+        const { id } = jwt.verify(token, process.env.JWT_PASSWORD);
 
-        const { rows, rowCount } = await pool.query(
-            `select * from usuarios where id = $1`,
-            [id]);
+        const user = await knex('usuarios').where({ id })
 
-        if (rowCount === 0) {
+        if (user.length === 0) {
             return res.status(401).json({
                 mensagem: `Requisição não autorizada!`
             });
         }
 
-        const { senha, ...usuario } = rows[0];
+        const { senha, ...usuario } = user[0];
 
         req.usuario = usuario;
 

@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const senhaJwt = require('../passwordToken');
 const { validacaoDeCamposObrigatorios } = require('../helpers/validations');
+const knex = require('../connection/api');
 
 const cadastroDeUsuario = async (req, res) => {
     const { nome, email, senha } = req.body;
@@ -12,24 +13,19 @@ const cadastroDeUsuario = async (req, res) => {
     }
 
     try {
-        const emailExistente = await pool.query(
-            `select * from usuarios where usuarios.email = $1`,
-            [email]
-        );
+        const emailExistente = await knex('usuarios').where({ email })
 
-        if (emailExistente.rowCount > 0) {
+        if (emailExistente.length > 0) {
             return res.status(400).json({
                 mensagem: `Já existe usuário cadastrado com o e-mail informado!`
             });
         }
+
         const senhaCriptografada = await bcrypt.hash(senha, 10);
 
-        const novoUsuario = await pool.query(
-            `insert into usuarios (nome, email, senha) values ($1, $2, $3) returning *`,
-            [nome, email, senhaCriptografada]
-        );
+        const novoUsuario = await knex('usuarios').insert({ nome, email, senha: senhaCriptografada }).returning('*')
 
-        const { senha: _, ...usuario } = novoUsuario.rows[0];
+        const { senha: _, ...usuario } = novoUsuario[0];
 
         return res.status(201).json(usuario);
 
@@ -43,25 +39,16 @@ const cadastroDeUsuario = async (req, res) => {
 const loginDeUsuario = async (req, res) => {
     const { email, senha } = req.body;
 
-    if (!email || !senha) {
-        return res.status(400).json({
-            mensagem: `É necessário preencher todos os campos!`
-        });
-    }
-
     try {
-        const usuario = await pool.query(
-            `select * from usuarios where email = $1`,
-            [email]
-        );
+        const usuario = await knex('usuarios').where({ email })
 
-        if (usuario.rowCount === 0) {
+        if (usuario.length === 0) {
             return res.status(400).json({
                 mensagem: `E-mail ou senha invalidos!`
             });
         }
 
-        const { senha: senhaDoUsuario, ...usuarioLogado } = usuario.rows[0];
+        const { senha: senhaDoUsuario, ...usuarioLogado } = usuario[0];
 
         const senhaValida = await bcrypt.compare(senha, senhaDoUsuario);
 
@@ -71,9 +58,7 @@ const loginDeUsuario = async (req, res) => {
             })
         }
 
-        const token = jwt.sign({ id: usuarioLogado.id }, senhaJwt, {
-            expiresIn: '24h',
-        });
+        const token = jwt.sign({ id: usuarioLogado.id }, process.env.JWT_PASSWORD, { expiresIn: '24h' });
 
         return res.json({
             usuario: usuarioLogado,
@@ -109,12 +94,9 @@ const atualizacaoDeUsuario = async (req, res) => {
     }
 
     try {
-        const emailExistente = await pool.query(
-            `select * from usuarios where usuarios.email = $1 and not usuarios.id = $2`,
-            [email, req.usuario.id]
-        );
+        const emailExistente = await knex('usuarios').where({ email }).whereNot('id', id)
 
-        if (emailExistente.rowCount > 0) {
+        if (emailExistente.length > 0) {
             return res.status(400).json({
                 mensagem: `Já existe usuário cadastrado com o e-mail informado!`
             });
@@ -122,27 +104,15 @@ const atualizacaoDeUsuario = async (req, res) => {
 
         const senhaCriptografada = await bcrypt.hash(senha, 10);
 
-        const { rowCount } = await pool.query(
-            'select * from usuarios where id = $1',
-            [id]
-        )
+        const usuarioEncontrado = await knex('usuarios').where({ id })
 
-        if (rowCount === 0) {
+        if (usuarioEncontrado.length === 0) {
             return res.status(404).json({
                 mensagem: `Usuário não encontrado!`
             })
         }
 
-        const atualizarUsuario = `
-            update usuarios set 
-            nome = $1,
-            email = $2,
-            senha = $3  
-            where id = $4
-            `;
-
-        await pool.query(atualizarUsuario, [nome, email, senhaCriptografada, id]);
-
+        await knex('usuarios').update({ nome, email, senha }).where({ id })
         return res.status(204).json();
 
     } catch (err) {
@@ -154,12 +124,9 @@ const atualizacaoDeUsuario = async (req, res) => {
 
 const listagemDeCategorias = async (req, res) => {
     try {
-        const categoriasCadastradas = await pool.query(
-            `select * from categorias`
-        );
+        const categoriasCadastradas = await knex('categorias')
 
-        return res.json(categoriasCadastradas.rows);
-
+        return res.json(categoriasCadastradas);
     } catch (err) {
         return res.status(500).json({
             mensagem: `Erro interno do servidor! ${err}`
