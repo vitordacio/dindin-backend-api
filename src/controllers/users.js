@@ -1,15 +1,10 @@
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { validacaoDeCamposObrigatorios } = require('../helpers/validations');
 const knex = require('../connection/api');
 
 const cadastroDeUsuario = async (req, res) => {
     const { nome, email, senha } = req.body;
-
-    if (!validacaoDeCamposObrigatorios(nome, email, senha)) {
-        return res.status(400).json({ mensagem: ` Nome, e-mail ou senha não detectados. É necessário preencher todos os campos!` });
-    }
 
     try {
         const emailExistente = await knex('usuarios').where({ email })
